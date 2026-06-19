@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Deck Replicator</title>
+  <style>
+    :root {
+      --bg: #0f1117;
+      --panel: #181b24;
+      --panel-2: #1f2330;
+      --border: #2a2f3d;
+      --text: #e7e9ee;
+      --muted: #98a0b3;
+      --accent: #6d8bff;
+      --accent-2: #8a6dff;
+      --ok: #3ecf8e;
+      --err: #ff6b6b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh; color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 70% -10%, #232a44 0%, var(--bg) 55%);
+      display: flex; align-items: flex-start; justify-content: center; padding: 48px 20px;
+    }
+    .wrap { width: 100%; max-width: 720px; }
+    .hero h1 { font-size: 30px; margin: 0 0 6px; letter-spacing: -0.02em; }
+    .hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    .hero p { color: var(--muted); margin: 0 0 28px; font-size: 15px; line-height: 1.5; }
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+      padding: 26px; box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 0 0 8px; color: var(--text); }
+    .hint { font-weight: 400; color: var(--muted); }
+    .field { margin-bottom: 20px; }
+    input[type="text"], textarea {
+      width: 100%; background: var(--panel-2); border: 1px solid var(--border);
+      color: var(--text); border-radius: 10px; padding: 12px 14px; font-size: 14px;
+      font-family: inherit; resize: vertical; transition: border-color .15s, box-shadow .15s;
+    }
+    input[type="text"]:focus, textarea:focus {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(109,139,255,0.18);
+    }
+    .drop {
+      border: 1.5px dashed var(--border); border-radius: 12px; padding: 26px; text-align: center;
+      background: var(--panel-2); cursor: pointer; transition: border-color .15s, background .15s;
+    }
+    .drop:hover, .drop.drag { border-color: var(--accent); background: #20253a; }
+    .drop .big { font-size: 15px; font-weight: 600; }
+    .drop .small { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .drop.has-file { border-color: var(--ok); }
+    .drop.has-file .big { color: var(--ok); }
+    input[type="file"] { display: none; }
+    .row { display: flex; gap: 16px; }
+    .row .field { flex: 1; }
+    button.go {
+      width: 100%; border: none; cursor: pointer; color: #fff; font-size: 15px; font-weight: 700;
+      padding: 14px; border-radius: 11px; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: transform .08s, opacity .15s;
+    }
+    button.go:hover { transform: translateY(-1px); }
+    button.go:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+    .status { margin-top: 18px; font-size: 14px; min-height: 22px; display: flex; align-items: center; gap: 10px; }
+    .status.ok { color: var(--ok); }
+    .status.err { color: var(--err); }
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25);
+      border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .foot { color: var(--muted); font-size: 12px; margin-top: 22px; text-align: center; line-height: 1.6; }
+    a { color: var(--accent); }
+    .badge { display:inline-block; padding:2px 8px; border:1px solid var(--border); border-radius:999px; font-size:11px; color:var(--muted); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hero">
+      <h1>Deck <span>Replicator</span></h1>
+      <p>Upload a reference PowerPoint. Pick a new topic. Get back the same deck &mdash; same fonts, colors, layout and images &mdash; rewritten for your subject by Claude.</p>
+    </div>
+
+    <form id="form" class="card">
+      <div class="field">
+        <label>Reference deck <span class="hint">(.pptx)</span></label>
+        <div id="drop" class="drop">
+          <div class="big" id="dropTitle">Drop a .pptx here or click to browse</div>
+          <div class="small" id="dropSub">We clone this file and only swap the text.</div>
+        </div>
+        <input type="file" id="file" accept=".pptx" />
+      </div>
+
+      <div class="field">
+        <label for="topic">New topic / subject</label>
+        <input type="text" id="topic" placeholder="e.g. Introduction to Photosynthesis" />
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label for="audience">Audience <span class="hint">(optional)</span></label>
+          <input type="text" id="audience" placeholder="e.g. high-school students" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="extra">Extra guidance <span class="hint">(optional)</span></label>
+        <textarea id="extra" rows="2" placeholder="Tone, emphasis, things to include or avoid…"></textarea>
+      </div>
+
+      <button type="submit" class="go" id="go">Replicate deck</button>
+      <div class="status" id="status"></div>
+    </form>
+
+    <div class="foot">
+      Powered by python-pptx + the Claude API.
+      <span id="health" class="badge">checking…</span>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('file');
+    const drop = document.getElementById('drop');
+    const dropTitle = document.getElementById('dropTitle');
+    const dropSub = document.getElementById('dropSub');
+    const form = document.getElementById('form');
+    const go = document.getElementById('go');
+    const statusEl = document.getElementById('status');
+
+    drop.addEventListener('click', () => fileInput.click());
+    ['dragover','dragenter'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.add('drag'); }));
+    ['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => { ev.preventDefault(); drop.classList.remove('drag'); }));
+    drop.addEventListener('drop', ev => {
+      if (ev.dataTransfer.files.length) { fileInput.files = ev.dataTransfer.files; showFile(); }
+    });
+    fileInput.addEventListener('change', showFile);
+
+    function showFile() {
+      const f = fileInput.files[0];
+      if (!f) return;
+      drop.classList.add('has-file');
+      dropTitle.textContent = f.name;
+      dropSub.textContent = (f.size / 1024 / 1024).toFixed(2) + ' MB selected';
+    }
+
+    function setStatus(msg, kind, spin) {
+      statusEl.className = 'status' + (kind ? ' ' + kind : '');
+      statusEl.innerHTML = (spin ? '<span class="spinner"></span>' : '') + msg;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const f = fileInput.files[0];
+      const topic = document.getElementById('topic').value.trim();
+      if (!f) return setStatus('Choose a reference .pptx first.', 'err');
+      if (!topic) return setStatus('Enter a topic for the new deck.', 'err');
+
+      const fd = new FormData();
+      fd.append('file', f);
+      fd.append('topic', topic);
+      fd.append('audience', document.getElementById('audience').value.trim());
+      fd.append('extra', document.getElementById('extra').value.trim());
+
+      go.disabled = true;
+      setStatus('Reading the reference, writing your version with Claude…', '', true);
+
+      try {
+        const res = await fetch('/api/replicate', { method: 'POST', body: fd });
+        if (!res.ok) {
+          let detail = 'Request failed (' + res.status + ').';
+          try { detail = (await res.json()).detail || detail; } catch (_) {}
+          throw new Error(detail);
+        }
+        const slides = res.headers.get('X-Slides');
+        const replaced = res.headers.get('X-Elements-Replaced');
+        const blob = await res.blob();
+        const dispo = res.headers.get('Content-Disposition') || '';
+        const m = dispo.match(/filename="?([^"]+)"?/);
+        const name = m ? m[1] : 'replicated-deck.pptx';
+
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+
+        setStatus(`Done — ${slides} slides, ${replaced} text blocks rewritten. Download started.`, 'ok');
+      } catch (err) {
+        setStatus(err.message, 'err');
+      } finally {
+        go.disabled = false;
+      }
+    });
+
+    fetch('/api/health').then(r => r.json()).then(h => {
+      const el = document.getElementById('health');
+      el.textContent = h.api_key_configured ? ('model: ' + h.model) : 'no API key set';
+      el.style.color = h.api_key_configured ? 'var(--ok)' : 'var(--err)';
+    }).catch(() => {});
+  </script>
+</body>
+</html>
