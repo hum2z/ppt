@@ -5,11 +5,12 @@ __pycache__/
 venv/
 *.egg-info/
 
-# Runtime artifacts
-uploads/*
-outputs/*
-!uploads/.gitkeep
-!outputs/.gitkeep
+# Runtime artifacts (the app writes uploads/outputs to a temp dir)
+uploads/
+outputs/
+
+# Vercel
+.vercel/
 
 # Local env
 .env

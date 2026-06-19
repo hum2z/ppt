@@ -96,8 +96,8 @@ def generate_content(
     key = api_key or os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         raise GenerationError(
-            "ANTHROPIC_API_KEY is not set. Add it to the environment so the app "
-            "can call the Claude API."
+            "No Anthropic API key provided. Paste your key into the API key field, "
+            "or set ANTHROPIC_API_KEY on the server."
         )
     if blueprint.element_count == 0:
         raise GenerationError(

@@ -109,6 +109,11 @@
         <textarea id="extra" rows="2" placeholder="Tone, emphasis, things to include or avoid…"></textarea>
       </div>
 
+      <div class="field" id="keyField">
+        <label for="apikey">Anthropic API key <span class="hint">(used only for this request, never stored)</span></label>
+        <input type="password" id="apikey" placeholder="sk-ant-…" autocomplete="off" />
+      </div>
+
       <button type="submit" class="go" id="go">Replicate deck</button>
       <div class="status" id="status"></div>
     </form>
@@ -161,6 +166,7 @@
       fd.append('topic', topic);
       fd.append('audience', document.getElementById('audience').value.trim());
       fd.append('extra', document.getElementById('extra').value.trim());
+      fd.append('api_key', document.getElementById('apikey').value.trim());
 
       go.disabled = true;
       setStatus('Reading the reference, writing your version with Claude…', '', true);
@@ -194,8 +200,13 @@
 
     fetch('/api/health').then(r => r.json()).then(h => {
       const el = document.getElementById('health');
-      el.textContent = h.api_key_configured ? ('model: ' + h.model) : 'no API key set';
-      el.style.color = h.api_key_configured ? 'var(--ok)' : 'var(--err)';
+      el.textContent = 'model: ' + h.model;
+      el.style.color = 'var(--muted)';
+      // If the server already holds a key, the user doesn't need to supply one.
+      if (h.api_key_configured) {
+        const kf = document.getElementById('keyField');
+        if (kf) kf.style.display = 'none';
+      }
     }).catch(() => {});
   </script>
 </body>

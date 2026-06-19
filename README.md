@@ -39,6 +39,18 @@ cp .env.example .env          # then add your ANTHROPIC_API_KEY
 Open the page, drop in a `.pptx`, type a topic (optionally an audience and extra
 guidance), and click **Replicate deck**. Your browser downloads the new file.
 
+## Deploy on Vercel
+
+The repo is Vercel-ready: `api/index.py` exposes the FastAPI app to Vercel's
+Python runtime and `vercel.json` rewrites all routes to it. Runtime files are
+written to `/tmp` (the only writable path on serverless).
+
+Because a public deployment shouldn't ship a shared secret, the app runs in
+**bring-your-own-key** mode: visitors paste their own Anthropic API key into the
+form (used only for that request, never stored). To run it as a private app with
+a fixed key instead, set `ANTHROPIC_API_KEY` in the Vercel project's environment
+variables — the key field then disappears and the server key is used.
+
 ## Command line
 
 No browser needed:

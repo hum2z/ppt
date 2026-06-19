@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import re
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -15,11 +16,14 @@ from .deck import apply_translations, extract_blueprint
 from .generate import DEFAULT_MODEL, GenerationError, generate_content
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-UPLOAD_DIR = BASE_DIR / "uploads"
-OUTPUT_DIR = BASE_DIR / "outputs"
 STATIC_DIR = BASE_DIR / "static"
+# Runtime artifacts live in a writable temp dir (required on serverless hosts
+# like Vercel, where the deployment filesystem is read-only except for /tmp).
+WORK_DIR = Path(os.environ.get("DECK_WORK_DIR", tempfile.gettempdir()))
+UPLOAD_DIR = WORK_DIR / "deck_uploads"
+OUTPUT_DIR = WORK_DIR / "deck_outputs"
 for d in (UPLOAD_DIR, OUTPUT_DIR):
-    d.mkdir(exist_ok=True)
+    d.mkdir(parents=True, exist_ok=True)
 
 MAX_UPLOAD_BYTES = int(os.environ.get("MAX_UPLOAD_BYTES", 25 * 1024 * 1024))
 
@@ -51,6 +55,7 @@ async def replicate(
     topic: str = Form(...),
     audience: str = Form(""),
     extra: str = Form(""),
+    api_key: str = Form(""),
 ):
     if not file.filename or not file.filename.lower().endswith(".pptx"):
         raise HTTPException(400, "Please upload a .pptx PowerPoint file.")
@@ -77,6 +82,7 @@ async def replicate(
             topic=topic.strip(),
             audience=audience.strip() or None,
             extra=extra.strip() or None,
+            api_key=api_key.strip() or None,
         )
     except GenerationError as exc:
         raise HTTPException(502, str(exc)) from exc
